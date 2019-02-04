@@ -1,11 +1,11 @@
 package server
 
 import (
-	"go_web_server/pkg"
 	"log"
 	"net/http"
 	"os"
 
+	root "github.com/Trirandom/capstone/server/pkg"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )

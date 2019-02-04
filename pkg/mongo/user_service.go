@@ -17,7 +17,7 @@ func NewUserService(session *Session, dbName string, collectionName string, hash
 	return &UserService{collection, hash}
 }
 
-func (p *UserService) Create(u *root.User) error {
+func (p *UserService) CreateUser(u *root.User) error {
 	user := newUserModel(u)
 	return p.collection.Insert(&user)
 }

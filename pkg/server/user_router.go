@@ -3,10 +3,10 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"go_web_server/pkg"
 	"log"
 	"net/http"
 
+	root "github.com/Trirandom/capstone/server/pkg"
 	"github.com/gorilla/mux"
 )
 
@@ -29,7 +29,7 @@ func (ur *userRouter) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = ur.userService.Create(&user)
+	err = ur.userService.CreateUser(&user)
 	if err != nil {
 		Error(w, http.StatusInternalServerError, err.Error())
 		return
@@ -54,10 +54,10 @@ func (ur *userRouter) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func decodeUser(ur *http.Request) (root.User, error) {
 	var u root.User
-	if r.Body == nil {
+	if ur.Body == nil {
 		return u, errors.New("no request body")
 	}
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(ur.Body)
 	err := decoder.Decode(&u)
 	return u, err
 }
