@@ -9,29 +9,34 @@ import (
 
 	"github.com/Trirandom/capstone/server/pkg/mongo"
 	jwt "github.com/appleboy/gin-jwt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/argon2"
 	"gopkg.in/mgo.v2/bson"
 )
 
 type login struct {
-	Username string `form:"username" json:"username" binding:"required"`
+	Email    string `form:"email" json:"email" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
 }
 type registerRequest struct {
-	Username string `form:"username" json:"username" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
+	FirstName string `json:"firstname" binding:"required"`
+	LastName  string `json:"lastname" binding:"required"`
+	Password  string `json:"password" binding:"required"`
+	Email     string `json:"email" binding:"required"`
 }
 
 var identityKey = "id"
 
-func helloHandler(c *gin.Context) {
+func profileHandler(c *gin.Context) {
+	fmt.Print("profileHandler: %p", c)
 	claims := jwt.ExtractClaims(c)
 	user, _ := c.Get(identityKey)
 	c.JSON(200, gin.H{
-		"userID":   claims["id"],
-		"userName": user.(*User).UserName,
-		"text":     "Hello World.",
+		"userID":    claims["id"],
+		"fisrtName": user.(*User).FirstName,
+		"lastName":  user.(*User).LastName,
+		"email":     user.(*User).Email,
 	})
 }
 
@@ -41,7 +46,9 @@ func hashPassword(password string) []byte {
 
 func registerHandler(c *gin.Context) {
 	var register registerRequest
+	fmt.Printf("context: %p", c)
 	if err := c.ShouldBind(&register); err != nil {
+		fmt.Printf("Body: %s", register)
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
@@ -50,8 +57,10 @@ func registerHandler(c *gin.Context) {
 		log.Fatalln("unable to connect to mongodb")
 	}
 	user := DBUser{
-		UserName: register.Username,
-		Password: hashPassword(register.Password),
+		Email:     register.Email,
+		Password:  hashPassword(register.Password),
+		FirstName: register.FirstName,
+		LastName:  register.LastName,
 	}
 	ms.GetCollection("user").Insert(user)
 	fmt.Printf("success")
@@ -59,7 +68,7 @@ func registerHandler(c *gin.Context) {
 	return
 }
 
-func compare(a, b []byte) bool {
+func byteArrayCompare(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -78,13 +87,13 @@ func compare(a, b []byte) bool {
 
 // User demo
 type DBUser struct {
-	UserName  string `json:"username" bson:"username,omitempty"`
+	Email     string `json:"email" bson:"email,omitempty"`
 	FirstName string `json:"firstname" bson:"firstname,omitempty"`
 	LastName  string `json:"lastname" bson:"lastname,omitempty"`
 	Password  []byte `json:"password" bson:"password,omitempty"`
 }
 type User struct {
-	UserName  string
+	Email     string
 	FirstName string
 	LastName  string
 }
@@ -92,6 +101,7 @@ type User struct {
 func main() {
 	port := os.Getenv("PORT")
 	r := gin.New()
+	r.Use(cors.Default())
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
@@ -111,7 +121,7 @@ func main() {
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if v, ok := data.(*User); ok {
 				return jwt.MapClaims{
-					identityKey: v.UserName,
+					identityKey: v.FirstName,
 				}
 			}
 			return jwt.MapClaims{}
@@ -119,7 +129,7 @@ func main() {
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
 			return &User{
-				UserName: claims["id"].(string),
+				FirstName: claims["id"].(string),
 			}
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {
@@ -127,19 +137,19 @@ func main() {
 			if err := c.ShouldBind(&loginVals); err != nil {
 				return nil, jwt.ErrMissingLoginValues
 			}
-			userID := loginVals.Username
+			userID := loginVals.Email
 			password := hashPassword(loginVals.Password)
 			ms, err := mongo.NewSession("127.0.0.1:27017")
 			if err != nil {
 				log.Fatalln("unable to connect to mongodb")
 			}
 			var row []DBUser
-			ms.GetCollection("user").Find(bson.M{"username": userID}).All(&row)
+			ms.GetCollection("user").Find(bson.M{"email": userID}).All(&row)
 			defer ms.Close()
 			for _, value := range row {
-				if userID == value.UserName && compare(password, value.Password) {
+				if userID == value.Email && byteArrayCompare(password, value.Password) {
 					return &User{
-						UserName:  userID,
+						Email:     userID,
 						LastName:  "BG du 67",
 						FirstName: "Wow",
 					}, nil
@@ -148,7 +158,7 @@ func main() {
 			return nil, jwt.ErrFailedAuthentication
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if v, ok := data.(*User); ok && v.UserName == "admin" {
+			if v, ok := data.(*User); ok && v.FirstName == "admin" {
 				return true
 			}
 
@@ -185,6 +195,7 @@ func main() {
 
 	r.POST("/login", authMiddleware.LoginHandler)
 	r.POST("/register", registerHandler)
+	// r.POST("/logout", logout)
 
 	r.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 		claims := jwt.ExtractClaims(c)
@@ -197,7 +208,7 @@ func main() {
 	auth.GET("/refresh_token", authMiddleware.RefreshHandler)
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
-		auth.GET("/hello", helloHandler)
+		auth.GET("/profile", profileHandler)
 	}
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {
