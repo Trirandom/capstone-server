@@ -7,11 +7,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/Trirandom/capstone/server/pkg/apitoolbox"
 	"github.com/Trirandom/capstone/server/pkg/mongo"
+	"github.com/Trirandom/capstone/server/pkg/mycalendar"
+
 	jwt "github.com/appleboy/gin-jwt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/argon2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -25,23 +27,29 @@ type registerRequest struct {
 	Password  string `json:"password" binding:"required"`
 	Email     string `json:"email" binding:"required"`
 }
+type newsletterRequest struct {
+	Name  string `json:"name" binding:"required"`
+	Email string `json:"email" binding:"required"`
+}
 
 var identityKey = "id"
 
-func profileHandler(c *gin.Context) {
-	fmt.Print("profileHandler: %p", c)
-	claims := jwt.ExtractClaims(c)
-	user, _ := c.Get(identityKey)
-	c.JSON(200, gin.H{
-		"userID":    claims["id"],
-		"fisrtName": user.(*User).FirstName,
-		"lastName":  user.(*User).LastName,
-		"email":     user.(*User).Email,
-	})
-}
-
-func hashPassword(password string) []byte {
-	return argon2.Key([]byte(password), []byte("mysalt8YI56780IJLKETRD4gsdrstyy'3-(é'zdhgs"), 3, 32*1024, 4, 32)
+func newsletterHandler(c *gin.Context) {
+	var userInfo newsletterRequest
+	fmt.Print("newsletterHandler: %#v \n", c)
+	if err := c.ShouldBind(&userInfo); err != nil {
+		fmt.Printf("Body: %s", userInfo)
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	ms, err := mongo.NewSession("127.0.0.1:27017")
+	if err != nil {
+		log.Fatalln("unable to connect to mongodb")
+	}
+	ms.GetCollection("maillist").Insert(userInfo)
+	fmt.Printf("success")
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "added to mailing list", "resourceId": userInfo.Name})
+	defer ms.Close()
 }
 
 func registerHandler(c *gin.Context) {
@@ -58,31 +66,36 @@ func registerHandler(c *gin.Context) {
 	}
 	user := DBUser{
 		Email:     register.Email,
-		Password:  hashPassword(register.Password),
+		Password:  apitoolbox.HashPassword(register.Password),
 		FirstName: register.FirstName,
 		LastName:  register.LastName,
 	}
 	ms.GetCollection("user").Insert(user)
 	fmt.Printf("success")
 	defer ms.Close()
+	c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "User created", "resourceId": user.FirstName})
 	return
 }
 
-func byteArrayCompare(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
+func profileHandler(c *gin.Context) {
+	fmt.Print("profileHandler: %#v", c)
+	claims := jwt.ExtractClaims(c)
+	// user, _ := c.Get(identityKey)
+	email := claims["id"]
+	ms, err := mongo.NewSession("127.0.0.1:27017")
+	if err != nil {
+		log.Fatalln("unable to connect to mongodb")
 	}
-	for i, v := range a {
-		if b[i] != v {
-			return false
-		}
+	var row []DBUser = nil
+	ms.GetCollection("user").Find(bson.M{"email": email}).All(&row)
+	defer ms.Close()
+	if row != nil {
+		c.JSON(200, gin.H{
+			"user": row[0],
+		})
+	} else {
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "User not found", "resourceId": email})
 	}
-	for k, v := range a {
-		if b[k] != v {
-			return false
-		}
-	}
-	return true
 }
 
 // User demo
@@ -101,16 +114,23 @@ type User struct {
 func main() {
 	port := os.Getenv("PORT")
 	r := gin.New()
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:4200"},
+		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin, X-Requested-With, Content-Type, Accept, Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		// AllowAllOrigins:  true,
+		AllowOriginFunc: func(origin string) bool {
+			return true //origin == "https://github.com"
+		},
+		MaxAge: 12 * time.Hour,
+	}))
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-
-	fmt.Println("hello from main")
-
 	if port == "" {
 		port = "8080"
 	}
-
 	// the jwt middleware
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "test zone",
@@ -121,15 +141,16 @@ func main() {
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if v, ok := data.(*User); ok {
 				return jwt.MapClaims{
-					identityKey: v.FirstName,
+					identityKey: v.Email,
 				}
 			}
 			return jwt.MapClaims{}
 		},
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
+			fmt.Println("IdentityHandler data %s", claims["id"].(string))
 			return &User{
-				FirstName: claims["id"].(string),
+				Email: claims["id"].(string),
 			}
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {
@@ -137,32 +158,34 @@ func main() {
 			if err := c.ShouldBind(&loginVals); err != nil {
 				return nil, jwt.ErrMissingLoginValues
 			}
-			userID := loginVals.Email
-			password := hashPassword(loginVals.Password)
+			email := loginVals.Email
+			password := apitoolbox.HashPassword(loginVals.Password)
 			ms, err := mongo.NewSession("127.0.0.1:27017")
 			if err != nil {
 				log.Fatalln("unable to connect to mongodb")
 			}
 			var row []DBUser
-			ms.GetCollection("user").Find(bson.M{"email": userID}).All(&row)
+			ms.GetCollection("user").Find(bson.M{"email": email}).All(&row)
 			defer ms.Close()
 			for _, value := range row {
-				if userID == value.Email && byteArrayCompare(password, value.Password) {
+				if email == value.Email && apitoolbox.ByteArrayCompare(password, value.Password) {
 					return &User{
-						Email:     userID,
-						LastName:  "BG du 67",
-						FirstName: "Wow",
+						Email:     email,
+						LastName:  value.LastName,
+						FirstName: value.FirstName,
 					}, nil
 				}
 			}
 			return nil, jwt.ErrFailedAuthentication
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if v, ok := data.(*User); ok && v.FirstName == "admin" {
-				return true
-			}
-
-			return false
+			// fmt.Println("Authorizator data ", data.(*User).FirstName)
+			// if v, ok := data.(*User); ok && v.FirstName == "admin" {
+			// 	fmt.Println("Authorizator v  %#v", v.FirstName)
+			// 	return true
+			// }
+			// fmt.Println("Authorizator failed v  %#v", data.(*User))
+			return true
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
@@ -195,11 +218,11 @@ func main() {
 
 	r.POST("/login", authMiddleware.LoginHandler)
 	r.POST("/register", registerHandler)
-	// r.POST("/logout", logout)
+	r.POST("/newsletter", newsletterHandler)
 
 	r.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 		claims := jwt.ExtractClaims(c)
-		log.Printf("NoRoute claims: %#v\n", claims)
+		log.Printf("NoRoute claims: %#v \n", claims)
 		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
 	})
 
@@ -209,7 +232,12 @@ func main() {
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
 		auth.GET("/profile", profileHandler)
+		auth.GET("/calendar", mycalendar.InitCalendar)
+		auth.POST("/calendar/token", mycalendar.SaveToken)
+		auth.DELETE("/calendar/token", mycalendar.RevokeToken)
 	}
+
+	// mycalendar.InitCalendar()
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)
