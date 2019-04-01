@@ -10,7 +10,7 @@ type Session struct {
 
 func NewSession(url string) (*Session, error) {
 
-	session, err := mgo.Dial("localhost:27017")
+	session, err := mgo.Dial("mongodb:27017")
 	if err != nil {
 		return nil, err
 	}

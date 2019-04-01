@@ -42,7 +42,7 @@ func newsletterHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	ms, err := mongo.NewSession("127.0.0.1:27017")
+	ms, err := mongo.NewSession("mongodb:27017")
 	if err != nil {
 		log.Fatalln("unable to connect to mongodb")
 	}
@@ -60,7 +60,7 @@ func registerHandler(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	ms, err := mongo.NewSession("127.0.0.1:27017")
+	ms, err := mongo.NewSession("mongodb:27017")
 	if err != nil {
 		log.Fatalln("unable to connect to mongodb")
 	}
@@ -82,7 +82,7 @@ func profileHandler(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	// user, _ := c.Get(identityKey)
 	email := claims["id"]
-	ms, err := mongo.NewSession("127.0.0.1:27017")
+	ms, err := mongo.NewSession("mongodb:27017")
 	if err != nil {
 		log.Fatalln("unable to connect to mongodb")
 	}
@@ -160,7 +160,7 @@ func main() {
 			}
 			email := loginVals.Email
 			password := apitoolbox.HashPassword(loginVals.Password)
-			ms, err := mongo.NewSession("127.0.0.1:27017")
+			ms, err := mongo.NewSession("mongodb:27017")
 			if err != nil {
 				log.Fatalln("unable to connect to mongodb")
 			}
