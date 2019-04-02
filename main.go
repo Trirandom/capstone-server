@@ -9,7 +9,7 @@ import (
 
 	"github.com/Trirandom/capstone-server/pkg/apitoolbox"
 	"github.com/Trirandom/capstone-server/pkg/mongo"
-	"github.com/Trirandom/capstone-server/pkg/mycalendar"
+	"github.com/Trirandom/capstone-server/pkg/steamhandler"
 
 	jwt "github.com/appleboy/gin-jwt"
 	"github.com/gin-contrib/cors"
@@ -33,6 +33,7 @@ type newsletterRequest struct {
 }
 
 var identityKey = "id"
+var steamApiKey = os.Getenv("STEAMAPIKEY")
 
 func newsletterHandler(c *gin.Context) {
 	var userInfo newsletterRequest
@@ -237,9 +238,10 @@ func main() {
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
 		auth.GET("/profile", profileHandler)
-		auth.GET("/calendar", mycalendar.InitCalendar)
-		auth.POST("/calendar/token", mycalendar.SaveToken)
-		auth.DELETE("/calendar/token", mycalendar.RevokeToken)
+		//		auth.GET("/calendar", mycalendar.InitCalendar)
+		//		auth.POST("/calendar/token", mycalendar.SaveToken)
+		//		auth.DELETE("/calendar/token", mycalendar.RevokeToken)
+		auth.POST("/steam-connexion", steamhandler.SteamConnect)
 	}
 
 	// mycalendar.InitCalendar()

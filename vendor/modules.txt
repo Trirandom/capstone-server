@@ -1,5 +1,16 @@
 # cloud.google.com/go v0.34.0
 cloud.google.com/go/compute/metadata
+# github.com/Philipp15b/go-steam v1.0.0
+github.com/Philipp15b/go-steam
+github.com/Philipp15b/go-steam/protocol/steamlang
+github.com/Philipp15b/go-steam/cryptoutil
+github.com/Philipp15b/go-steam/netutil
+github.com/Philipp15b/go-steam/protocol
+github.com/Philipp15b/go-steam/protocol/gamecoordinator
+github.com/Philipp15b/go-steam/protocol/protobuf
+github.com/Philipp15b/go-steam/rwu
+github.com/Philipp15b/go-steam/socialcache
+github.com/Philipp15b/go-steam/steamid
 # github.com/appleboy/gin-jwt v0.0.0-20190216100112-ca1084e5d5a2
 github.com/appleboy/gin-jwt
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -15,6 +26,7 @@ github.com/gin-gonic/gin/json
 github.com/gin-gonic/gin/render
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
+github.com/golang/protobuf/protoc-gen-go/descriptor
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
