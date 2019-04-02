@@ -33,6 +33,7 @@ func SteamConnect(c *gin.Context) {
 
 	client := steam.NewClient()
 	client.Connect()
+	fmt.Printf("\nsuccess  2  %#v\n", steamCo)
 	for event := range client.Events() {
 		switch e := event.(type) {
 		case *steam.ConnectedEvent:
