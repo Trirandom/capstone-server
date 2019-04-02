@@ -70,10 +70,15 @@ func registerHandler(c *gin.Context) {
 		FirstName: register.FirstName,
 		LastName:  register.LastName,
 	}
-	ms.GetCollection("user").Insert(user)
-	fmt.Printf("success")
+	err = ms.GetCollection("user").Insert(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Cannot insert into database", "resourceId": user.FirstName})
+		log.Fatalln("unable to insert %v#", err)
+	} else {
+		fmt.Printf("success %#v", user)
+		c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "User created", "resourceId": user.FirstName})
+	}
 	defer ms.Close()
-	c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "User created", "resourceId": user.FirstName})
 	return
 }
 

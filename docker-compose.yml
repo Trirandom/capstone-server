@@ -3,17 +3,17 @@ services:
   mongodb:
     image: mongo:latest
     volumes: 
-      - db-data:/var/lib/mongodb
+      - "db-data:/data/db"
     restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: admin
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: root
+#      MONGO_INITDB_ROOT_PASSWORD: pwd
   mongoui:
     image: mrvautin/adminmongo
     environment:
       HOST: 0.0.0.0
       PORT: 4242
-      PASSWORD: 4242
+      PASSWORD: adminaufromagefondu
       CONTEXT: admin
     ports:
       - 4242:4242

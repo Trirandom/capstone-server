@@ -8,12 +8,32 @@ type Session struct {
 	session *mgo.Session
 }
 
+const (
+	MongoDBHosts = "mongodb:27017"
+	database     = "mongodb"
+	userName     = "root"
+	password     = "pwd"
+	testDatabase = "testdb"
+)
+const mongoURI = "mongodb://root:pwd@mongodb:27017/"
+
 func NewSession(url string) (*Session, error) {
 
+	/* mongoDBDialInfo := &mgo.DialInfo{
+		Addrs:    []string{MongoDBHosts},
+		Timeout:  60 * time.Second,
+		Database: database,
+		Username: userName,
+		Password: password,
+	} */
+
 	session, err := mgo.Dial("mongodb:27017")
+	//	session, err := mgo.Dial(mongoURI)
+	//	session, err := mgo.DialWithInfo(mongoDBDialInfo)
 	if err != nil {
 		return nil, err
 	}
+	//	session.Login(&mgo.Credential{Username: userName, Password: password})
 	return &Session{session}, err
 }
 
