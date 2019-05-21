@@ -5,9 +5,9 @@ services:
     volumes: 
       - "db-data:/data/db"
     restart: always
-#    environment:
-#      MONGO_INITDB_ROOT_USERNAME: root
-#      MONGO_INITDB_ROOT_PASSWORD: pwd
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: capstone-user
+      MONGO_INITDB_ROOT_PASSWORD: les_patates_sont_cuites
   mongoui:
     image: mrvautin/adminmongo
     environment:
@@ -25,7 +25,10 @@ services:
     restart: on-failure
     ports:
       - 8080:8080
-#    environment:
+    environment:
+      - steamApiId
+      - steamAccount
+      - steamPassword
 #      GIN_MODE: release
 
 

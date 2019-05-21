@@ -1,20 +1,15 @@
 # cloud.google.com/go v0.34.0
 cloud.google.com/go/compute/metadata
-# github.com/Philipp15b/go-steam v1.0.0
-github.com/Philipp15b/go-steam
-github.com/Philipp15b/go-steam/protocol/steamlang
-github.com/Philipp15b/go-steam/cryptoutil
-github.com/Philipp15b/go-steam/netutil
-github.com/Philipp15b/go-steam/protocol
-github.com/Philipp15b/go-steam/protocol/gamecoordinator
-github.com/Philipp15b/go-steam/protocol/protobuf
-github.com/Philipp15b/go-steam/rwu
-github.com/Philipp15b/go-steam/socialcache
-github.com/Philipp15b/go-steam/steamid
+# github.com/PuerkitoBio/goquery v1.5.0
+github.com/PuerkitoBio/goquery
+# github.com/andybalholm/cascadia v1.0.0
+github.com/andybalholm/cascadia
 # github.com/appleboy/gin-jwt v0.0.0-20190216100112-ca1084e5d5a2
 github.com/appleboy/gin-jwt
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
+# github.com/doctype/steam v0.0.0-20180530094431-c2f2151389ed
+github.com/doctype/steam
 # github.com/gin-contrib/cors v0.0.0-20190301062745-f9e10995c85a
 github.com/gin-contrib/cors
 # github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7
@@ -26,7 +21,6 @@ github.com/gin-gonic/gin/json
 github.com/gin-gonic/gin/render
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
-github.com/golang/protobuf/protoc-gen-go/descriptor
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
@@ -63,7 +57,9 @@ golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
 # golang.org/x/net v0.0.0-20190327091125-710a502c58a2
 golang.org/x/net/context
+golang.org/x/net/html
 golang.org/x/net/context/ctxhttp
+golang.org/x/net/html/atom
 golang.org/x/net/trace
 golang.org/x/net/internal/timeseries
 golang.org/x/net/http2

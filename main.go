@@ -10,6 +10,7 @@ import (
 	"github.com/Trirandom/capstone-server/pkg/apitoolbox"
 	"github.com/Trirandom/capstone-server/pkg/mongo"
 	"github.com/Trirandom/capstone-server/pkg/steamhandler"
+	"github.com/doctype/steam"
 
 	jwt "github.com/appleboy/gin-jwt"
 	"github.com/gin-contrib/cors"
@@ -65,6 +66,15 @@ func registerHandler(c *gin.Context) {
 	if err != nil {
 		log.Fatalln("unable to connect to mongodb")
 	}
+
+	var row []DBUser = nil
+	ms.GetCollection("user").Find(bson.M{"email": register.Email}).All(&row)
+	if row != nil {
+		defer ms.Close()
+		c.JSON(http.StatusConflict, gin.H{"status": http.StatusConflict, "message": "Already exist", "resourceId": register.Email})
+		return
+	}
+
 	user := DBUser{
 		Email:     register.Email,
 		Password:  apitoolbox.HashPassword(register.Password),
@@ -96,8 +106,14 @@ func profileHandler(c *gin.Context) {
 	ms.GetCollection("user").Find(bson.M{"email": email}).All(&row)
 	defer ms.Close()
 	if row != nil {
+		user := User{
+			Email:     row[0].Email,
+			FirstName: row[0].FirstName,
+			LastName:  row[0].LastName,
+		}
 		c.JSON(200, gin.H{
-			"user": row[0],
+			"satatus": http.StatusOK,
+			"user":    user,
 		})
 	} else {
 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "User not found", "resourceId": email})
@@ -222,6 +238,10 @@ func main() {
 		log.Fatal("JWT Error:" + err.Error())
 	}
 
+	s := &steamhandler.SteamSessions{
+		Sessions: map[string]*steam.Session{},
+	}
+
 	r.POST("/login", authMiddleware.LoginHandler)
 	r.POST("/register", registerHandler)
 	r.POST("/newsletter", newsletterHandler)
@@ -238,10 +258,19 @@ func main() {
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
 		auth.GET("/profile", profileHandler)
-		//		auth.GET("/calendar", mycalendar.InitCalendar)
-		//		auth.POST("/calendar/token", mycalendar.SaveToken)
-		//		auth.DELETE("/calendar/token", mycalendar.RevokeToken)
-		auth.POST("/steam-connexion", steamhandler.SteamConnect)
+
+		auth.POST("/steam-connexion", s.SteamConnect)
+		steamAuth := auth.Group("/steam")
+		steamAuth.Use(s.SteamAuthMiddleware())
+		{
+			steamAuth.GET("/friend", s.GetFriends)
+			steamAuth.GET("/inventory", s.GetInventory)
+			steamAuth.GET("/game", s.GetOwnedGames)
+		}
+		// Google Calendar connexion
+		// auth.GET("/calendar", mycalendar.InitCalendar)
+		// auth.POST("/calendar/token", mycalendar.SaveToken)
+		// auth.DELETE("/calendar/token", mycalendar.RevokeToken)
 	}
 
 	// mycalendar.InitCalendar()

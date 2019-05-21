@@ -1,8 +1,10 @@
 module github.com/Trirandom/capstone-server
 
 require (
-	github.com/Philipp15b/go-steam v1.0.0
+	github.com/Philipp15b/go-steam v1.0.0 // indirect
+	github.com/PuerkitoBio/goquery v1.5.0 // indirect
 	github.com/appleboy/gin-jwt v0.0.0-20190216100112-ca1084e5d5a2
+	github.com/doctype/steam v0.0.0-20180530094431-c2f2151389ed
 	github.com/emanoelxavier/openid2go v0.0.0-20180402135103-aa401da4d229 // indirect
 	github.com/gin-contrib/cors v0.0.0-20190301062745-f9e10995c85a
 	github.com/gin-gonic/gin v1.3.0

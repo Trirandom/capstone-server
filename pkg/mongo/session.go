@@ -9,31 +9,29 @@ type Session struct {
 }
 
 const (
-	MongoDBHosts = "mongodb:27017"
-	database     = "mongodb"
-	userName     = "root"
-	password     = "pwd"
-	testDatabase = "testdb"
+	mongoDBHosts = "localhost:27017" // localhost for local & mongodb for docker
+	database     = "capstone"
+	userName     = "capstone-user"
+	password     = "les_patates_sont_cuites"
 )
-const mongoURI = "mongodb://root:pwd@mongodb:27017/"
 
+// NewSession create a new mongodb session
 func NewSession(url string) (*Session, error) {
 
-	/* mongoDBDialInfo := &mgo.DialInfo{
-		Addrs:    []string{MongoDBHosts},
-		Timeout:  60 * time.Second,
-		Database: database,
-		Username: userName,
-		Password: password,
-	} */
+	// mongoDBDialInfo := &mgo.DialInfo{
+	// 	Addrs:    []string{mongoDBHosts},
+	// 	Timeout:  60 * time.Second,
+	// 	Database: database,
+	// 	Username: userName,
+	// 	Password: password,
+	// }
 
 	session, err := mgo.Dial("mongodb:27017")
-	//	session, err := mgo.Dial(mongoURI)
-	//	session, err := mgo.DialWithInfo(mongoDBDialInfo)
+	// session, err := mgo.DialWithInfo(mongoDBDialInfo)
 	if err != nil {
 		return nil, err
 	}
-	//	session.Login(&mgo.Credential{Username: userName, Password: password})
+	// session.Login(&mgo.Credential{Username: userName, Password: password})
 	return &Session{session}, err
 }
 
