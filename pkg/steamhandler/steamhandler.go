@@ -91,7 +91,7 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 
 	timeTip, err := steam.GetTimeTip()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"status": http.StatusInternalServerError, "message": "GetTimeTip() failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "GetTimeTip() failed"})
 		log.Panic(err)
 	}
 	log.Printf("Time tip: %#v\n", timeTip)
@@ -101,7 +101,7 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 
 	Session := steam.NewSession(&http.Client{}, os.Getenv("steamApiId"))
 	if err := Session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret"), timeDiff); err != nil {
-		c.JSON(http.StatusOK, gin.H{"status": http.StatusInternalServerError, "message": "Login to steam failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Login to steam failed"})
 		log.Panic(err)
 	}
 	claims := jwt.ExtractClaims(c)
