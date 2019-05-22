@@ -37,7 +37,7 @@ func (s *SteamSessions) GetFriends(c *gin.Context) {
 		friendStID := steam.SteamID(friend.SteamID)
 		playerSummary, err := currentSession.GetPlayerSummaries(friendStID.ToString())
 		if err != nil {
-			log.Printf("getPlayer error: ", err)
+			log.Print("getPlayer error: ", err)
 		} else {
 			for _, summary := range playerSummary {
 				log.Printf("Player Summary: %#v", summary.PersonaName)
@@ -109,6 +109,12 @@ func (s *SteamSessions) GetInventory(c *gin.Context) {
 	return
 }
 
+type steamCredential struct {
+	Account      string `json:"firstname" binding:"required"`
+	Password     string `json:"password" binding:"required"`
+	SharedSecret string `json:"sharedSecret" binding:"omitempty"`
+}
+
 func (s *SteamSessions) SteamConnect(c *gin.Context) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -120,18 +126,28 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 	log.Printf("Time tip: %#v\n", timeTip)
 	timeDiff := time.Duration(timeTip.Time - time.Now().Unix())
 
-	log.Print("account %s", os.Getenv("steamAccount"))
+	// Get optional credential
+	var creds steamCredential
+
+	if err := c.ShouldBind(&creds); err != nil {
+		creds = steamCredential{
+			Account:  os.Getenv("steamAccount"),
+			Password: os.Getenv("steamPassword"),
+		}
+	}
+
+	log.Printf("Try to log with %s", creds.Account)
 
 	Session := steam.NewSession(&http.Client{}, os.Getenv("steamApiId"))
-	if err := Session.Login(os.Getenv("steamAccount"), os.Getenv("steamPassword"), os.Getenv("steamSharedSecret"), timeDiff); err != nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Login failed"))
+	if err := Session.Login(creds.Account, creds.Password, os.Getenv("steamSharedSecret"), timeDiff); err != nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Login with account "+creds.Account+" failed"))
 		return
 	}
 	claims := jwt.ExtractClaims(c)
 
 	s.Sessions[claims["id"].(string)] = Session
 
-	log.Print("Login successful")
+	log.Print("Login with account " + creds.Account + " successful")
 
 	// sid := steam.SteamID(Session.GetSteamID())
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Login successful with " + os.Getenv("steamAccount"), "resourceId": claims["id"]})
