@@ -64,6 +64,7 @@ func registerHandler(c *gin.Context) {
 	}
 	ms, err := mongo.NewSession("mongodb:27017")
 	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
 		log.Fatalln("unable to connect to mongodb")
 	}
 
@@ -84,7 +85,7 @@ func registerHandler(c *gin.Context) {
 	err = ms.GetCollection("user").Insert(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Cannot insert into database", "resourceId": user.FirstName})
-		log.Fatalln("unable to insert %v#", err)
+		log.Fatalln("unable to insert %#v", err)
 	} else {
 		fmt.Printf("success %#v", user)
 		c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "User created", "resourceId": user.FirstName})

@@ -6,8 +6,8 @@ services:
       - "db-data:/data/db"
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: capstone-user
-      MONGO_INITDB_ROOT_PASSWORD: les_patates_sont_cuites
+#      MONGO_INITDB_ROOT_USERNAME: capstone-user
+#     MONGO_INITDB_ROOT_PASSWORD: les_patates_sont_cuites
   mongoui:
     image: mrvautin/adminmongo
     environment:
