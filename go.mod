@@ -9,6 +9,7 @@ require (
 	github.com/gin-contrib/cors v0.0.0-20190301062745-f9e10995c85a
 	github.com/gin-gonic/gin v1.3.0
 	github.com/golang/mock v1.2.0 // indirect
+	github.com/pkg/errors v0.8.0
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 // indirect
 	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
