@@ -18,8 +18,8 @@ type SteamSessions struct {
 }
 
 type steamFriend struct {
-	id   steam.SteamID
-	name string
+	ID   steam.SteamID `json:"id" binding:"required"`
+	Name string        `json:"name" binding:"required"`
 }
 
 func (s *SteamSessions) GetFriends(c *gin.Context) {
@@ -40,20 +40,19 @@ func (s *SteamSessions) GetFriends(c *gin.Context) {
 			log.Print("getPlayer error: ", err)
 		} else {
 			for _, summary := range playerSummary {
-				log.Printf("Player Summary: %#v", summary.PersonaName)
+				log.Printf("Friend Summary: %#v", summary.PersonaName)
 				currentFriend := steamFriend{
-					id:   friendStID,
-					name: summary.PersonaName,
+					ID:   friendStID,
+					Name: summary.PersonaName,
 				}
 				returnFriends = append(returnFriends, currentFriend)
 			}
 		}
 	}
-
+	log.Printf("Friend Summary: %#v", returnFriends)
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"friends": returnFriends,
-		// "resourceId": claims["id"],
 	})
 	return
 }
@@ -82,6 +81,11 @@ func (s *SteamSessions) GetOwnedGames(c *gin.Context) {
 	return
 }
 
+type inventoryItem struct {
+	ID   uint64 `json:"id" binding:"required"`
+	Name string `json:"name" binding:"required"`
+}
+
 func (s *SteamSessions) GetInventory(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	currentSession := s.Sessions[claims["id"].(string)]
@@ -91,6 +95,8 @@ func (s *SteamSessions) GetInventory(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Get inventory App stats failed"))
 		return
 	}
+
+	returnItems := []inventoryItem{}
 	for _, v := range apps {
 		log.Printf("-- AppID total asset count: %d\n", v.AssetCount)
 		for _, context := range v.Contexts {
@@ -103,14 +109,25 @@ func (s *SteamSessions) GetInventory(c *gin.Context) {
 
 			for _, item := range inventory {
 				log.Printf("Item: %s = %d\n", item.Desc.MarketHashName, item.AssetID)
+				currentItem := inventoryItem{
+					ID:   item.AssetID,
+					Name: item.Desc.MarketHashName,
+				}
+				returnItems = append(returnItems, currentItem)
 			}
 		}
 	}
+
+	log.Printf("Items Summary: %#v", returnItems)
+	c.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"items":  returnItems,
+	})
 	return
 }
 
 type steamCredential struct {
-	Account      string `json:"firstname" binding:"required"`
+	Account      string `json:"account" binding:"required"`
 	Password     string `json:"password" binding:"required"`
 	SharedSecret string `json:"sharedSecret" binding:"omitempty"`
 }
@@ -128,16 +145,15 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 
 	// Get optional credential
 	var creds steamCredential
-
 	if err := c.ShouldBind(&creds); err != nil {
+		log.Print("Binding failed ", creds, err)
 		creds = steamCredential{
 			Account:  os.Getenv("steamAccount"),
 			Password: os.Getenv("steamPassword"),
 		}
 	}
 
-	log.Printf("Try to log with %s", creds.Account)
-
+	log.Print("Try to log with", creds.Account, os.Getenv("steamApiId"))
 	Session := steam.NewSession(&http.Client{}, os.Getenv("steamApiId"))
 	if err := Session.Login(creds.Account, creds.Password, os.Getenv("steamSharedSecret"), timeDiff); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Login with account "+creds.Account+" failed"))
@@ -146,11 +162,9 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 
 	s.Sessions[claims["id"].(string)] = Session
-
 	log.Print("Login with account " + creds.Account + " successful")
 
-	// sid := steam.SteamID(Session.GetSteamID())
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Login successful with " + os.Getenv("steamAccount"), "resourceId": claims["id"]})
+	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Login successful with " + creds.Account, "resourceId": claims["id"]})
 	return
 }
 
@@ -162,7 +176,6 @@ func (s *SteamSessions) SteamAuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(401, gin.H{"error": "Need to open a Steam session first with auth/steam-connexion."})
 			return
 		}
-
 		c.Next()
 	}
 }
