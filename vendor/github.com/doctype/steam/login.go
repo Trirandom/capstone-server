@@ -130,7 +130,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		if loginSession.RequiresTwoFactor {
 			return ErrNeedTwoFactor
 		}
-		fmt.Println("login response: lginSession.Success: ", loginSession.Message)
+		fmt.Println("login response: lginSession.Success: ", loginSession.Message, "\n\n", loginSession, "\n")
 		return errors.New(loginSession.Message)
 	}
 
