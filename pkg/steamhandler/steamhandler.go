@@ -161,7 +161,7 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, errors.New("Need a steam api key to login"))
 		return
 	}
-	log.Printf("Try to log with %s %s", creds.Account, os.Getenv("steamApiId"))
+	log.Printf("Try to log with %s %s %s", creds.Account, os.Getenv("steamApiId"), os.Getenv("steamSharedSecret"))
 	Session := steam.NewSession(&http.Client{}, os.Getenv("steamApiId"))
 	if err := Session.Login(creds.Account, creds.Password, os.Getenv("steamSharedSecret"), timeDiff); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Login with account "+creds.Account+" failed"))

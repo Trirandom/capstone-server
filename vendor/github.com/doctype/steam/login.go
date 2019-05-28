@@ -116,7 +116,6 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 	}
 
 	if err != nil {
-		fmt.Println("login response: session.client.Do: Err: ", resp, ", ", err)
 		return err
 	}
 
@@ -130,7 +129,6 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		if loginSession.RequiresTwoFactor {
 			return ErrNeedTwoFactor
 		}
-		fmt.Printf("login response: lginSession.Success:\n %#v \n\n %#v \n", loginSession.RedirectURI, loginSession)
 		return errors.New(loginSession.Message)
 	}
 
@@ -239,7 +237,6 @@ func (session *Session) LoginTwoFactorCode(accountName, password, twoFactorCode 
 func (session *Session) Login(accountName, password, sharedSecret string, timeOffset time.Duration) error {
 	response, err := session.makeLoginRequest(accountName, password)
 	if err != nil {
-		fmt.Println("login response: ", response, ", ", err)
 		return err
 	}
 
