@@ -102,6 +102,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 	if err != nil {
 		return err
 	}
+	fmt.Println("login response: NewRequest: ", req, ", ", err)
 
 	req.Header.Add("X-Requested-With", httpXRequestedWithValue)
 	req.Header.Add("Referer", "https://steamcommunity.com/mobilelogin?oauth_client_id=DE45CD61&oauth_scope=read_profile%20write_profile%20read_client%20write_client")
@@ -129,16 +130,18 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		if loginSession.RequiresTwoFactor {
 			return ErrNeedTwoFactor
 		}
-
+		fmt.Println("login response: lginSession.Success: ", loginSession.Message)
 		return errors.New(loginSession.Message)
 	}
 
 	if err := json.Unmarshal([]byte(loginSession.OAuthInfo), &session.oauth); err != nil {
+		fmt.Println("login response: json.Unmarshal: ", session, ", ", err)
 		return err
 	}
 
 	randomBytes := make([]byte, 6)
 	if _, err := rand.Read(randomBytes); err != nil {
+		fmt.Println("login response: RandomByte: Err: ", randomBytes, ", ", err)
 		return err
 	}
 
