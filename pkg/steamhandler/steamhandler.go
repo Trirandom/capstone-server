@@ -32,17 +32,17 @@ func (s *SteamSessions) GetFriends(c *gin.Context) {
 	}
 
 	returnFriends := []steamFriend{}
+
 	for _, friend := range friends {
-		log.Printf("Friend: %#v", friend)
-		friendStID := steam.SteamID(friend.SteamID)
-		playerSummary, err := currentSession.GetPlayerSummaries(friendStID.ToString())
+		steamID := steam.SteamID(friend.SteamID)
+		playerSummary, err := currentSession.GetPlayerSummaries(steamID.ToString())
 		if err != nil {
 			log.Print("getPlayer error: ", err)
 		} else {
 			for _, summary := range playerSummary {
 				log.Printf("Friend Summary: %#v", summary.PersonaName)
 				currentFriend := steamFriend{
-					ID:   friendStID,
+					ID:   steamID,
 					Name: summary.PersonaName,
 				}
 				returnFriends = append(returnFriends, currentFriend)
@@ -164,7 +164,10 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 	s.Sessions[claims["id"].(string)] = Session
 	log.Print("Login with account " + creds.Account + " successful")
 
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Login successful with " + creds.Account, "resourceId": claims["id"]})
+	c.JSON(http.StatusOK, gin.H{
+		"status":     http.StatusOK,
+		"message":    "Login successful with " + creds.Account,
+		"resourceId": claims["id"]})
 	return
 }
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -34,45 +33,49 @@ type newsletterRequest struct {
 }
 
 var identityKey = "id"
-var steamApiKey = os.Getenv("STEAMAPIKEY")
 
 func newsletterHandler(c *gin.Context) {
 	var userInfo newsletterRequest
-	fmt.Print("newsletterHandler: %#v \n", c)
 	if err := c.ShouldBind(&userInfo); err != nil {
-		fmt.Printf("Body: %s", userInfo)
-		c.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-	ms, err := mongo.NewSession("mongodb:27017")
-	if err != nil {
-		log.Fatalln("unable to connect to mongodb")
-	}
-	ms.GetCollection("maillist").Insert(userInfo)
-	fmt.Printf("success")
-	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "added to mailing list", "resourceId": userInfo.Name})
-	defer ms.Close()
-}
-
-func registerHandler(c *gin.Context) {
-	var register registerRequest
-	fmt.Printf("context: %p", c)
-	if err := c.ShouldBind(&register); err != nil {
-		fmt.Printf("Body: %s", register)
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	ms, err := mongo.NewSession("mongodb:27017")
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-		log.Fatalln("unable to connect to mongodb")
+		return
+	}
+	ms.GetCollection("maillist").Insert(userInfo)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":     http.StatusCreated,
+		"message":    "added to mailing list",
+		"resourceId": userInfo.Name,
+	})
+	defer ms.Close()
+}
+
+func registerHandler(c *gin.Context) {
+	var register registerRequest
+	if err := c.ShouldBind(&register); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	ms, err := mongo.NewSession("mongodb:27017")
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
 	var row []DBUser = nil
 	ms.GetCollection("user").Find(bson.M{"email": register.Email}).All(&row)
 	if row != nil {
 		defer ms.Close()
-		c.JSON(http.StatusConflict, gin.H{"status": http.StatusConflict, "message": "Already exist", "resourceId": register.Email})
+		c.AbortWithStatusJSON(http.StatusConflict, gin.H{
+			"status":     http.StatusConflict,
+			"message":    "Already exist",
+			"resourceId": register.Email,
+		})
 		return
 	}
 
@@ -84,10 +87,9 @@ func registerHandler(c *gin.Context) {
 	}
 	err = ms.GetCollection("user").Insert(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Cannot insert into database", "resourceId": user.FirstName})
-		log.Fatalln("unable to insert %#v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "message": "Cannot insert into database", "resourceId": user.FirstName})
+		return
 	} else {
-		fmt.Printf("success %#v", user)
 		c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "User created", "resourceId": user.FirstName})
 	}
 	defer ms.Close()
@@ -95,13 +97,13 @@ func registerHandler(c *gin.Context) {
 }
 
 func profileHandler(c *gin.Context) {
-	fmt.Print("profileHandler: %#v", c)
 	claims := jwt.ExtractClaims(c)
 	// user, _ := c.Get(identityKey)
 	email := claims["id"]
 	ms, err := mongo.NewSession("mongodb:27017")
 	if err != nil {
-		log.Fatalln("unable to connect to mongodb")
+		log.Println("unable to connect to mongodb")
+		c.AbortWithError(http.StatusInternalServerError, err)
 	}
 	var row []DBUser = nil
 	ms.GetCollection("user").Find(bson.M{"email": email}).All(&row)
@@ -113,11 +115,15 @@ func profileHandler(c *gin.Context) {
 			LastName:  row[0].LastName,
 		}
 		c.JSON(200, gin.H{
-			"satatus": http.StatusOK,
-			"user":    user,
+			"status": http.StatusOK,
+			"user":   user,
 		})
 	} else {
-		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "User not found", "resourceId": email})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"status":     http.StatusNotFound,
+			"message":    "User not found",
+			"resourceId": email})
+		return
 	}
 }
 
@@ -171,7 +177,6 @@ func main() {
 		},
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			fmt.Println("IdentityHandler data %s", claims["id"].(string))
 			return &User{
 				Email: claims["id"].(string),
 			}
@@ -212,7 +217,7 @@ func main() {
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
-				"code":    code,
+				"status":  code,
 				"message": message,
 			})
 		},
@@ -250,7 +255,7 @@ func main() {
 	r.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 		claims := jwt.ExtractClaims(c)
 		log.Printf("NoRoute claims: %#v \n", claims)
-		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "message": "Page not found"})
 	})
 
 	auth := r.Group("/auth")
