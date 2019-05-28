@@ -29,6 +29,7 @@ services:
       - steamApiId
       - steamAccount
       - steamPassword
+      - steamSharedSecret
 #      GIN_MODE: release
 
 
