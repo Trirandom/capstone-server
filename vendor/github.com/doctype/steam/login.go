@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"net/http"
 	"net/http/cookiejar"
@@ -111,15 +110,18 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 
 	resp, err := session.client.Do(req)
 	if resp != nil {
+		fmt.Println("login response: session.client.Do: ", resp, ", ", err)
 		defer resp.Body.Close()
 	}
 
 	if err != nil {
+		fmt.Println("login response: session.client.Do: Err: ", resp, ", ", err)
 		return err
 	}
 
 	var loginSession LoginSession
 	if err := json.NewDecoder(resp.Body).Decode(&loginSession); err != nil {
+		fmt.Println("login response: json.NewDecoder: ", resp.Body, ", ", err)
 		return err
 	}
 
@@ -237,7 +239,6 @@ func (session *Session) Login(accountName, password, sharedSecret string, timeOf
 	response, err := session.makeLoginRequest(accountName, password)
 	if err != nil {
 		fmt.Println("login response: ", response, ", ", err)
-		log.Println("login response: ", response, ", ", err)
 		return err
 	}
 
