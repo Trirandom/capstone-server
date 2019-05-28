@@ -236,7 +236,8 @@ func (session *Session) LoginTwoFactorCode(accountName, password, twoFactorCode 
 func (session *Session) Login(accountName, password, sharedSecret string, timeOffset time.Duration) error {
 	response, err := session.makeLoginRequest(accountName, password)
 	if err != nil {
-		log.Print("login response: ", err)
+		fmt.Println("login response: ", response, ", ", err)
+		log.Println("login response: ", response, ", ", err)
 		return err
 	}
 
