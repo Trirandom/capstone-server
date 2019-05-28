@@ -1,8 +1,6 @@
 package mongo
 
 import (
-	"os"
-
 	mgo "gopkg.in/mgo.v2"
 )
 
@@ -18,7 +16,7 @@ const (
 )
 
 // NewSession create a new mongodb session
-func NewSession(url string) (*Session, error) {
+func NewSession() (*Session, error) {
 
 	// mongoDBDialInfo := &mgo.DialInfo{
 	// 	Addrs:    []string{mongoDBHosts},
@@ -27,13 +25,9 @@ func NewSession(url string) (*Session, error) {
 	// 	Username: userName,
 	// 	Password: password,
 	// }
-	// session, err := mgo.DialWithInfo(mongoDBDialInfo)
 
-	var mongoURL = "localhost:27017"
-	if os.Getenv("CAPSTONE_PRODUCTION") == "true" {
-		mongoURL = "mongodb:27017"
-	}
-	session, err := mgo.Dial(mongoURL)
+	session, err := mgo.Dial("mongodb:27017")
+	// session, err := mgo.DialWithInfo(mongoDBDialInfo)
 	if err != nil {
 		return nil, err
 	}
