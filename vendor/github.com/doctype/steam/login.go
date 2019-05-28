@@ -111,7 +111,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 
 	resp, err := session.client.Do(req)
 	if resp != nil {
-		fmt.Println("login response: session.client.Do: ", resp, ", ", err)
+		fmt.Println("login response: session.client.Do: ", resp, "\n\n", resp.Body, "\n\n", resp.Header, "\n")
 		defer resp.Body.Close()
 	}
 
