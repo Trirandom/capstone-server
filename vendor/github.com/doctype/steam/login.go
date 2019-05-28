@@ -111,7 +111,7 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 
 	resp, err := session.client.Do(req)
 	if resp != nil {
-		fmt.Println("login response: session.client.Do: ", resp, "\n\n", resp.Body, "\n\n", resp.Header, "\n")
+		fmt.Printf("login response: session.client.Do: \n %#v \n\n %#v \n\n %#v \n", resp, resp.Body, resp.Body)
 		defer resp.Body.Close()
 	}
 
@@ -130,18 +130,16 @@ func (session *Session) proceedDirectLogin(response *LoginResponse, accountName,
 		if loginSession.RequiresTwoFactor {
 			return ErrNeedTwoFactor
 		}
-		fmt.Println("login response: lginSession.Success: ", loginSession.Message, "\n\n", loginSession, "\n")
+		fmt.Printf("login response: lginSession.Success:\n %#v \n\n %#v \n", loginSession.RedirectURI, loginSession)
 		return errors.New(loginSession.Message)
 	}
 
 	if err := json.Unmarshal([]byte(loginSession.OAuthInfo), &session.oauth); err != nil {
-		fmt.Println("login response: json.Unmarshal: ", session, ", ", err)
 		return err
 	}
 
 	randomBytes := make([]byte, 6)
 	if _, err := rand.Read(randomBytes); err != nil {
-		fmt.Println("login response: RandomByte: Err: ", randomBytes, ", ", err)
 		return err
 	}
 
