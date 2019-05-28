@@ -1,9 +1,11 @@
 package steamhandler
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/doctype/steam"
@@ -18,8 +20,8 @@ type SteamSessions struct {
 }
 
 type steamFriend struct {
-	ID   steam.SteamID `json:"id" binding:"required"`
-	Name string        `json:"name" binding:"required"`
+	ID   string `json:"id" binding:"required"`
+	Name string `json:"name" binding:"required"`
 }
 
 func (s *SteamSessions) GetFriends(c *gin.Context) {
@@ -27,26 +29,29 @@ func (s *SteamSessions) GetFriends(c *gin.Context) {
 	currentSession := s.Sessions[claims["id"].(string)]
 	friends, err := currentSession.GetFriends(currentSession.GetSteamID())
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Get friends failed"))
+		fmt.Print(friends)
+		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Get friends failed :'( "))
 		return
 	}
 
 	returnFriends := []steamFriend{}
-
+	friendSteamIDs := []string{}
 	for _, friend := range friends {
-		steamID := steam.SteamID(friend.SteamID)
-		playerSummary, err := currentSession.GetPlayerSummaries(steamID.ToString())
-		if err != nil {
-			log.Print("getPlayer error: ", err)
-		} else {
-			for _, summary := range playerSummary {
-				log.Printf("Friend Summary: %#v", summary.PersonaName)
-				currentFriend := steamFriend{
-					ID:   steamID,
-					Name: summary.PersonaName,
-				}
-				returnFriends = append(returnFriends, currentFriend)
+		id := steam.SteamID(friend.SteamID)
+		friendSteamIDs = append(friendSteamIDs, id.ToString())
+	}
+	fmt.Print("friend List: ", strings.Join(friendSteamIDs, ","))
+	playerSummary, err := currentSession.GetPlayerSummaries(strings.Join(friendSteamIDs, ","))
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+	} else {
+		for i, summary := range playerSummary {
+			log.Printf("Friend Summary: %#v", summary.PersonaName)
+			currentFriend := steamFriend{
+				ID:   friendSteamIDs[i],
+				Name: summary.PersonaName,
 			}
+			returnFriends = append(returnFriends, currentFriend)
 		}
 	}
 	log.Printf("Friend Summary: %#v", returnFriends)
@@ -69,14 +74,13 @@ func (s *SteamSessions) GetOwnedGames(c *gin.Context) {
 	log.Printf("Games count: %d\n", ownedGames.Count)
 	myGameIds := make([]uint32, 0)
 	for _, game := range ownedGames.Games {
-		log.Printf("Game: %d 2 weeks play time: %d\n", game.AppID, game.Playtime2Weeks)
+		// log.Printf("Game: %d 2 weeks play time: %d\n", game.AppID, game.Playtime2Weeks)
 		myGameIds = append(myGameIds, game.AppID)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"gameIds": myGameIds,
-		// "resourceId": claims["id"],
 	})
 	return
 }
@@ -146,14 +150,18 @@ func (s *SteamSessions) SteamConnect(c *gin.Context) {
 	// Get optional credential
 	var creds steamCredential
 	if err := c.ShouldBind(&creds); err != nil {
-		log.Print("Binding failed ", creds, err)
+		log.Print("Binding failed ", err)
 		creds = steamCredential{
 			Account:  os.Getenv("steamAccount"),
 			Password: os.Getenv("steamPassword"),
 		}
 	}
 
-	log.Print("Try to log with", creds.Account, os.Getenv("steamApiId"))
+	if os.Getenv("steamApiId") == "" {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("Need a steam api key to login"))
+		return
+	}
+	log.Printf("Try to log with %s %s", creds.Account, os.Getenv("steamApiId"))
 	Session := steam.NewSession(&http.Client{}, os.Getenv("steamApiId"))
 	if err := Session.Login(creds.Account, creds.Password, os.Getenv("steamSharedSecret"), timeDiff); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, errors.Wrap(err, "Login with account "+creds.Account+" failed"))

@@ -12,7 +12,7 @@ To see the logs : <code>docker-compose logs</code> <br/>
 
 <h4> Export this environment variables in order to connect with the steam api (won't work if you have steamGuard) </h4>
 <p>
-  <code>steamApiId=39A7FAA203B128CD20B20389B78C6D27</code> <br/>
+  <code>steamApiId=</code> <br/>
   <code>steamAccount=</code> <br />
   <code>steamPassword=</code> <br />
 </p>
